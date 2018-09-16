@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Movie Data Analysis</title>
+  <style>
+    .left_block {
+      float: left;
+      width: 450px;
+      height: 450px;
+    }
+
+    .right_block {
+        margin-left: 920px;
+    }
+
+    #option {
+        margin-left: 920px;
+        padding-top: 20px;
+    }
+
+    #datatable {
+        margin-top: 30px;
+    }
+
+    #upper_container {
+        height: 450px;
+    }
+    
+    table {
+        font-family: Arial, sans-serif;
+        font-size: 10px;
+        border: 1px solid;
+        border-collapse: collapse;
+    }
+
+    th {
+        background-color: #0066CC;
+        color: white;
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    td {
+        border: 1px solid;
+        padding: 5px;
+    }
+
+    .bar {
+        fill: #4285F4;
+        opacity: 1;
+    }
+
+    .not_clicked {
+        opacity: 0.5;
+    }
+
+  </style>
+</head>
+<body>
+    <div id="upper_container">
+        <div class="left_block">
+            <div id="barchart"></div>
+        </div>
+        <div class="left_block">
+            <div id="scatterplot"></div>
+        </div>
+        <div id="option"></div>
+    </div>
+    <div id="datatable"></div>
+    <script src="./lib/d3.v5.min.js"></script>
+    <script src="./data/movie.js"></script>
+    <script>
+
+    function translate(x, y) {
+      return 'translate(' + x + ', ' + y + ')';
+    }
+
+    function duration(transition) {
+        return transition.duration(500);
+    }
+
+    function delay(transition) {
+        return transition.delay(500);
+    }
+
+    data.forEach(function(d) {
+        d.budget = parseFloat(d.budget);
+        d.us_gross = parseFloat(d.us_gross);
+        d.worldwide_gross = parseFloat(d.worldwide_gross);
+        d.rotten_rating = parseFloat(d.rotten_rating);
+        d.imdb_rating = parseFloat(d.imdb_rating);
+        d.imdb_votes = parseFloat(d.imdb_votes);
+    });
+
+    counter = {}
+    data.forEach(function(d, i) {
+        key = d["genre"]
+        if(!counter.hasOwnProperty(key)) counter[key] = 0;
+        else counter[key] += 1;
+    });
+
+    data.forEach(function(d, i) {
+        d['_selected'] = false;
+        d['_alive'] = true;
+        d['_id'] = (i + 1);
+    });
+
+    data2 = [];
+    for (let key in counter) {
+        item = {};
+        item["genre"] = key;
+        item["frequency"] = counter[key];
+        item["_selected"] = false;
+        data2.push(item);
+    }
+
+    let svgWidth = 450;
+    let svgHeight = 450;
+    let margin = {top: 20, right: 10, bottom:30, left: 40};
+    let width = svgWidth - margin.left - margin.right;
+    let height = svgHeight - margin.top - margin.bottom;
+
+    function scatterPlot() {
+        let svg =
+        d3.select('#scatterplot')
+        .append('svg')
+            .attr('width', svgWidth)
+            .attr('height', svgHeight)
+            .append('g')
+                .attr('transform', translate(margin.left, margin.top));
+        
+        let options = ['budget', 'us_gross', 'worldwide_gross',
+        'rotten_rating', 'imdb_rating', 'imdb_votes'];
+        let selectedXVar = options[0];
+        let selectedYVar = options[1];
+
+        let x = d3.scaleLinear();
+        let y = d3.scaleLinear();
+        let xAxis = d3.axisBottom();
+        let yAxis = d3.axisLeft();
+        let color = d3.scaleOrdinal();
+
+        function init() {
+            
+            d3.select('#option')
+            .append('div')
+                .attr('id', 'x-axis-option')
+                .append('p')
+                    .style('display', 'inline')
+                    .text('X-Axis : ');
+            
+            d3.select('#x-axis-option')
+            .append('select')
+                .attr('id', 'x-select')
+                .selectAll('option')
+                .data(options)
+                .enter()
+                .append('option')
+                    .attr('id', d => 'x-' + d)
+                    .text(d => d)
+                    .property('value', d => d);
+
+            d3.select('#option')
+            .append('div')
+                .attr('id', 'y-axis-option')
+                .append('p')
+                    .style('display', 'inline')
+                    .text('Y-Axis : ');
+
+            d3.select('#y-axis-option')
+            .append('select')
+                .attr('id', 'y-select')
+                .selectAll('option')
+                .data(options)
+                .enter()
+                .append('option')
+                    .attr('id', d => 'y-' + d)
+                    .text(d => d)
+                    .property('value', d => d);
+
+            d3.select('#x-' + selectedXVar)
+            .attr('selected', 'selected');
+            d3.select('#y-' + selectedYVar)
+            .attr('selected', 'selected');
+
+            d3.select('#option')
+            .on('change', function() {
+                selectedXVar = d3.select('#x-select').property('value');
+                selectedYVar = d3.select('#y-select').property('value');
+                redrawAll();
+            });
+
+            svg
+            .append('g')
+                .attr('class', 'x axis')
+                .attr('transform', translate(0, height))          
+                .append('text')
+                    .attr('class', 'x-label')
+                    .attr('x', width)
+                    .attr('y', -6)
+                    .style('text-anchor', 'end')
+                    .style('fill', 'black');
+
+            svg
+            .append('g')
+                .attr('class', 'y axis')         
+                .append('text')
+                    .attr('class', 'y-label')
+                    .attr('transform', 'rotate(-90)')
+                    .attr('y', 13)
+                    .style('fill', 'black');
+
+            color = d3.scaleOrdinal()
+            .domain(['전체관람가', '7세이상', '15세이상', '19세이상'])
+            .range(['#3366cc', '#109618', '#ff9900', '#dc3912']);
+
+            let legend = svg
+            .selectAll('.legend')
+            .data(color.domain())
+            .enter()
+            .append('g')
+                .attr('transform', (d, i) => {
+                    return translate(0, i * 20);
+                });
+            
+            legend
+            .append('rect')
+                .attr('x', width - 18)
+                .attr('width', 18)
+                .attr('height', 18)
+                .style('fill', color);
+
+            legend
+            .append('text')
+                .attr('x', width - 24)
+                .attr('y', 9)
+                .attr('dy', 5)
+                .style('text-anchor', 'end')
+                .text(d => d);
+        }
+
+        function updateScale() {
+            x
+            .domain([
+                d3.min(data, d => d[selectedXVar]),
+                d3.max(data, d => d[selectedXVar])
+            ])
+            .range([0, width]);
+            xAxis.scale(x);
+
+            y
+            .domain([
+                d3.min(data, d => d[selectedYVar]),
+                d3.max(data, d => d[selectedYVar])
+            ])
+            .range([height, 0]);
+            yAxis.scale(y);
+        }
+
+        function updateAxis() {
+            d3.select('.x').transition().call(duration).call(xAxis);
+            d3.select('.y').transition().call(duration).call(yAxis);
+        }
+
+        function updateText() {
+            svg.select('.x-label').text(selectedXVar);
+            svg.select('.y-label').text(selectedYVar);
+        }
+
+        function updateCircles() {
+            // Circle
+            circles = svg
+            .selectAll('.org_circle')
+            .data(data);
+
+            // Circle : update
+            circles
+            .transition()
+            .call(duration)
+            .attr('cx', d => x(d[selectedXVar]))
+            .attr('cy', d => y(d[selectedYVar]));
+
+            // Circle : enter
+            circles.enter()
+            .append('circle')
+                .attr('class', 'org_circle')
+                .attr('r', 4.5)
+                .style('stroke-width', 0)
+                .style('opacity', 0.1)
+                .attr('cx', d => x(d[selectedXVar]))
+                .attr('cy', d => y(d[selectedYVar]))
+                .style('fill', d => color(d.rating));
+
+            // Alive Dummy
+            let alive_data = data.filter(d => d._alive);
+            let alive_dummy = svg
+            .selectAll('.alive_dummy')
+            .data(alive_data, d => d._id);
+
+            // Alive Dummy : update
+            alive_dummy
+            .transition()
+            .call(duration)
+            .attr('cx', d => x(d[selectedXVar]))
+            .attr('cy', d => y(d[selectedYVar]));
+
+            // Alive Dummy : enter
+            alive_dummy
+            .enter()
+            .append('circle')
+            .attr('class', 'alive_dummy')
+            .attr('r', 4.5)
+            .style('stroke-width', 0)
+            .attr('cx', d => x(d[selectedXVar]))
+            .attr('cy', d => y(d[selectedYVar]))
+            .style('fill', d => color(d.rating))
+            .on('click', d => {
+                d._selected = true;
+                redrawAll();
+            });
+
+            // Alive Dummy : exit
+            alive_dummy.exit().remove();
+
+            // Selected Dummy
+            let selected_data = data.filter(d => d._selected);
+            let selected_dummy = svg
+            .selectAll('.selected_dummy')
+            .data(selected_data, d => d._id);
+
+            // Selected Dummy : update
+            selected_dummy
+            .transition()
+            .call(duration)
+            .attr('cx', d => x(d[selectedXVar]))
+            .attr('cy', d => y(d[selectedYVar]));
+
+            // Selected Dummy : enter
+            selected_dummy
+            .enter()
+            .append('circle')
+            .attr('class', 'selected_dummy')
+            .attr('r', 4.5)
+            .style('stroke', 'black')
+            .style('stroke-width', 2)
+            .attr('cx', d => x(d[selectedXVar]))
+            .attr('cy', d => y(d[selectedYVar]))
+            .style('fill', d => color(d.rating))
+            .on('click', d => {
+                d._selected = false;
+                redrawAll();
+            });
+
+            // Selected Dummy : exit
+            selected_dummy.exit().remove();
+        }
+
+        this.redraw = function() {
+            updateScale();
+            updateAxis();
+            updateText();
+            updateCircles();
+        }
+
+        init();
+    }
+
+    function barChart() {
+        let svg = 
+        d3.select('#barchart')
+        .append('svg')
+            .attr('width', svgWidth)
+            .attr('height', svgHeight)
+            .append('g')
+                .attr('transform', translate(margin.left, margin.top));
+
+        let x = d3.scaleBand()
+                .rangeRound([0, width])
+                .paddingInner(0.2)
+                .paddingOuter(0.4);
+        let y = d3.scaleLinear()
+                .rangeRound([height, 0]);
+        
+        x.domain(data2.map(function(d) { return d.genre; }));
+        y.domain([0, d3.max(data2, function(d) { return d.frequency; })]);
+
+        svg
+        .append("g")
+            .attr("transform", translate(0, height))
+            .call(d3.axisBottom(x));
+
+        svg
+        .append("g")
+            .call(d3.axisLeft(y))
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", "0.71em")
+            .attr("text-anchor", "end")
+            .style('fill', 'black')
+            .text("Frequency");
+
+        let clicked_bar = [];
+        svg
+        .selectAll(".bar")
+        .data(data2)
+        .enter()
+        .append("rect")
+            .attr('class', 'bar')
+            .attr("x", function(d) { return x(d.genre); })
+            .attr("y", function(d) { return y(d.frequency); })
+            .attr("width", x.bandwidth())
+            .attr("height", function(d) { return height - y(d.frequency); })
+            .on("click", function(d, i, nodes) {
+
+                if (clicked_bar.length === 0)
+                    nodes.forEach(d => d3.select(d).attr('class', 'bar not_clicked'))
+
+                if (d._selected) {
+                    d._selected = false;
+                    d3.select(this).attr('class', 'bar not_clicked')
+                    clicked_bar = clicked_bar.filter(d => d !== this);
+                }
+                else {
+                    d._selected = true;
+                    d3.select(this).attr('class', 'bar');
+                    clicked_bar.push(this);
+                }
+
+                if (clicked_bar.length === 0)
+                    nodes.forEach(d => d3.select(d).attr('class', 'bar'))
+
+                redrawAll();
+            });
+            
+    }
+
+    function dataTable() {
+        let table = d3
+        .select('#datatable')
+        .append('table');
+
+        let thead = table.append('thead');
+        let	tbody = table.append('tbody');
+        let columns = d3.keys(data[0]).filter(d => !d.startsWith('_'));
+        
+        thead
+        .append('tr')
+            .selectAll('th')
+            .data(columns)
+            .enter()
+		        .append('th')
+                .text(function (column) { return column; });
+
+        this.redraw = function() {
+            inputData = []
+            data.forEach(d => {
+                if (d._alive) inputData.push(d);
+            });
+
+            let update = tbody.selectAll('tr').data(inputData, d => d._id);
+            
+            update
+            .selectAll('td')
+                .style('background-color', 'white');
+            update
+            .filter(d => d._selected)
+            .selectAll('td')
+                .style('background-color', 'yellow');
+
+            update.exit().remove();
+            
+            update.enter()
+            .append('tr')
+                .on('click', function(d) {
+                    if(d._selected) d._selected = false;
+                    else d._selected = true;
+                    redrawAll();
+                })
+                .selectAll('td')
+                .data(function (d) {
+                    return columns.map(function (column) {
+                        return {column: column, value: d[column]};
+                    });
+                })
+                .enter()
+                .append('td')
+                    .text(function (d) { return d.value; });
+        }
+    }
+    
+    function syncData() {
+        // sync direction: data2 --> data1
+        selectedGenre = [];
+        data2.forEach(function(d){
+           if (d._selected) {
+               selectedGenre.push(d.genre);
+           } 
+        });
+
+        if (selectedGenre.length === 0) {
+            data.forEach(d => d._alive = true);
+        }
+        else {
+            data.forEach(function(d){
+                if(selectedGenre.includes(d.genre)) d._alive = true;
+                else {
+                    d._alive = false;
+                    d._selected = false;
+                }
+            });
+        }
+    }
+
+    function redrawAll() {
+        syncData();
+        dt.redraw();
+        sp.redraw();
+    }
+
+    let sp = new scatterPlot();
+    let bc = new barChart();
+    let dt = new dataTable();
+
+    redrawAll();
+
+  </script>
+</body>
+</html>
