@@ -93,26 +93,27 @@
         d.imdb_votes = parseFloat(d.imdb_votes);
     });
 
-    counter = {}
+    let counter = {}
     data.forEach(function(d, i) {
-        key = d["genre"]
+        let key = d["genre"]
         if(!counter.hasOwnProperty(key)) counter[key] = 0;
-        else counter[key] += 1;
+        
+        counter[key] += 1;
     });
 
     data.forEach(function(d, i) {
-        d['_selected'] = false;
-        d['_alive'] = true;
-        d['_id'] = (i + 1);
+        d._selected = false;
+        d._alive = true;
+        d._id = i + 1;
     });
 
-    data2 = [];
+    let data2 = [];
     for (let key in counter) {
-        item = {};
-        item["genre"] = key;
-        item["frequency"] = counter[key];
-        item["_selected"] = false;
-        data2.push(item);
+        data2.push({
+            genre: key,
+            frequency: counter[key],
+            _selected: false
+        })
     }
 
     let svgWidth = 450;
@@ -356,14 +357,16 @@
             selected_dummy.exit().remove();
         }
 
-        this.redraw = function() {
+        
+
+        init();
+
+        return function() {
             updateScale();
             updateAxis();
             updateText();
             updateCircles();
         }
-
-        init();
     }
 
     function barChart() {
@@ -474,8 +477,7 @@
             update.enter()
             .append('tr')
                 .on('click', function(d) {
-                    if(d._selected) d._selected = false;
-                    else d._selected = true;
+                    d._selected = !d._selected;
                     redrawAll();
                 })
                 .selectAll('td')
@@ -516,10 +518,10 @@
     function redrawAll() {
         syncData();
         dt.redraw();
-        sp.redraw();
+        sp_redraw();
     }
 
-    let sp = new scatterPlot();
+    let sp_redraw = scatterPlot();
     let bc = new barChart();
     let dt = new dataTable();
 
