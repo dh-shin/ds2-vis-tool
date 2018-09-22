@@ -189,7 +189,7 @@
             .on('change', function() {
                 selectedXVar = d3.select('#x-select').property('value');
                 selectedYVar = d3.select('#y-select').property('value');
-                redrawAll();
+                update();
             });
 
             svg
@@ -239,6 +239,15 @@
                 .attr('dy', 5)
                 .style('text-anchor', 'end')
                 .text(d => d);
+
+            update();
+        }
+
+        function update() {
+            updateScale();
+            updateAxis();
+            updateText();
+            updateCircles();
         }
 
         function updateScale() {
@@ -318,7 +327,7 @@
             .style('fill', d => color(d.rating))
             .on('click', d => {
                 d._selected = true;
-                redrawAll();
+                updateAll();
             });
 
             // Alive Dummy : exit
@@ -350,23 +359,16 @@
             .style('fill', d => color(d.rating))
             .on('click', d => {
                 d._selected = false;
-                redrawAll();
+                updateAll();
             });
 
             // Selected Dummy : exit
             selected_dummy.exit().remove();
         }
 
-        
-
         init();
 
-        return function() {
-            updateScale();
-            updateAxis();
-            updateText();
-            updateCircles();
-        }
+        return update;
     }
 
     function barChart() {
@@ -434,9 +436,8 @@
                 if (clicked_bar.length === 0)
                     nodes.forEach(d => d3.select(d).attr('class', 'bar'))
 
-                redrawAll();
-            });
-            
+                updateAll();
+            });  
     }
 
     function dataTable() {
@@ -448,25 +449,33 @@
         let	tbody = table.append('tbody');
         let columns = d3.keys(data[0]).filter(d => !d.startsWith('_'));
         
-        thead
-        .append('tr')
-            .selectAll('th')
-            .data(columns)
-            .enter()
-		        .append('th')
-                .text(function (column) { return column; });
-
-        this.redraw = function() {
+        function init() {
+            thead
+            .append('tr')
+                .selectAll('th')
+                .data(columns)
+                .enter()
+                    .append('th')
+                    .text(function (column) { return column; });
+            
+            update();
+        }
+                
+        function update() {
             inputData = []
             data.forEach(d => {
                 if (d._alive) inputData.push(d);
             });
 
-            let update = tbody.selectAll('tr').data(inputData, d => d._id);
+            let update = 
+            tbody
+            .selectAll('tr')
+            .data(inputData, d => d._id);
             
             update
             .selectAll('td')
                 .style('background-color', 'white');
+
             update
             .filter(d => d._selected)
             .selectAll('td')
@@ -478,7 +487,7 @@
             .append('tr')
                 .on('click', function(d) {
                     d._selected = !d._selected;
-                    redrawAll();
+                    updateAll();
                 })
                 .selectAll('td')
                 .data(function (d) {
@@ -488,8 +497,12 @@
                 })
                 .enter()
                 .append('td')
-                    .text(function (d) { return d.value; });
+                    .text(function (d) { return d.value; });            
         }
+
+        init();
+
+        return update;
     }
     
     function syncData() {
@@ -515,18 +528,16 @@
         }
     }
 
-    function redrawAll() {
+    function updateAll() {
         syncData();
-        dt.redraw();
-        sp_redraw();
+        sp_update();
+        dt_update();
     }
 
-    let sp_redraw = scatterPlot();
-    let bc = new barChart();
-    let dt = new dataTable();
-
-    redrawAll();
-
+    barChart();
+    let sp_update = scatterPlot();
+    let dt_update = dataTable();
+    
   </script>
 </body>
 </html>
