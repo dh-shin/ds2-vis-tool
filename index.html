@@ -4,11 +4,7 @@
   <meta charset="utf-8">
   <title>Movie Data Analysis</title>
   <style>
-
-    #datatable {
-        margin-top: 30px;
-    }
-    
+      
     table {
         font-family: Arial, sans-serif;
         font-size: 10px;
@@ -26,15 +22,6 @@
     td {
         border: 1px solid;
         padding: 5px;
-    }
-
-    .bar {
-        fill: #4285F4;
-        opacity: 1;
-    }
-
-    .not_clicked {
-        opacity: 0.5;
     }
 
   </style>
@@ -63,10 +50,6 @@
 
     function duration(transition) {
         return transition.duration(500);
-    }
-
-    function delay(transition) {
-        return transition.delay(500);
     }
 
     let num_vars = ['budget', 'us_gross', 'worldwide_gross',
@@ -382,33 +365,33 @@
         let selectedBars = [];
 
         svg
-        .selectAll(".bar")
+        .selectAll("rect")
         .data(dataGenre)
         .enter()
         .append("rect")
-            .attr('class', 'bar')
             .attr("x", d => x(d.genre))
             .attr("y", d => y(d.count))
             .attr("width", x.bandwidth())
             .attr("height", d => height - y(d.count))
+            .style("fill", "#4285F4")
             .on("click", function(d, i, nodes) {
 
                 if (selectedBars.length === 0)
-                    nodes.forEach(d => d3.select(d).attr('class', 'bar not_clicked'))
+                    nodes.forEach(d => d3.select(d).style("opacity", 0.5))
+
+                d._selected = !d._selected;
 
                 if (d._selected) {
-                    d._selected = false;
-                    d3.select(this).attr('class', 'bar not_clicked')
-                    selectedBars = selectedBars.filter(d => d !== this);
+                    d3.select(this).style("opacity", 1);
+                    selectedBars.push(this);
                 }
                 else {
-                    d._selected = true;
-                    d3.select(this).attr('class', 'bar');
-                    selectedBars.push(this);
+                    d3.select(this).style("opacity", 0.5);
+                    selectedBars = selectedBars.filter(d => d !== this);
                 }
 
                 if (selectedBars.length === 0)
-                    nodes.forEach(d => d3.select(d).attr('class', 'bar'))
+                    nodes.forEach(d => d3.select(d).style("opacity", 1))
 
                 updateAll();
             });  
@@ -417,7 +400,8 @@
     function dataTable() {
         let table = 
         d3.select('#datatable')
-        .append('table');
+        .style("margin-top", "30px")
+        .append("table");
 
         let thead = table.append('thead');
         let	tbody = table.append('tbody');
