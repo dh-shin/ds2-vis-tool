@@ -27,8 +27,8 @@
   </style>
 </head>
 <body>
-    <div id="barchart"></div>
-    <div id="scatterplot"></div>
+    <span id="barchart"></span>
+    <span id="scatterplot"></span>
     <div id="control">
         <div>
             <span>X-Axis: </span>
@@ -83,7 +83,7 @@
         dataGenre.push({
             genre: key,
             count: counter[key],
-            //_selected: false
+            _selected: false
         })
     }
     */
@@ -97,7 +97,6 @@
     function drawScatterPlot() {
         let svg =
         d3.select('#scatterplot')
-        .style('display', 'inline')
         .append('svg')
             .attr('width', svgWidth)
             .attr('height', svgHeight)
@@ -331,7 +330,6 @@
     function drawBarChart() {
         let svg = 
         d3.select('#barchart')
-        .style('display', 'inline')
         .append('svg')
             .attr('width', svgWidth)
             .attr('height', svgHeight)
