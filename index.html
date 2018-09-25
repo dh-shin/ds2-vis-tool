@@ -59,12 +59,18 @@
         num_vars.forEach(function(v) {
             d[v] = parseFloat(d[v]);
         });
-
         d._selected = false;
         d._alive = true;
         d._id = i + 1;
     });
 
+    let dataGenre = d3.nest()
+    .key(d => d.genre)
+    .rollup(d => d.length)
+    .entries(data)
+    .map(d => obj = {"genre": d.key, "count": d.value, "_selected": false});
+
+    /*
     let counter = {}
     data.forEach(function(d, i) {
         let key = d["genre"]
@@ -77,9 +83,10 @@
         dataGenre.push({
             genre: key,
             count: counter[key],
-            _selected: false
+            //_selected: false
         })
     }
+    */
 
     let svgWidth = 450;
     let svgHeight = 450;
@@ -87,7 +94,7 @@
     let width = svgWidth - margin.left - margin.right;
     let height = svgHeight - margin.top - margin.bottom;
 
-    function scatterPlot() {
+    function drawScatterPlot() {
         let svg =
         d3.select('#scatterplot')
         .style('display', 'inline')
@@ -321,7 +328,7 @@
         return update;
     }
 
-    function barChart() {
+    function drawBarChart() {
         let svg = 
         d3.select('#barchart')
         .style('display', 'inline')
@@ -397,7 +404,7 @@
             });  
     }
 
-    function dataTable() {
+    function drawDataTable() {
         let table = 
         d3.select('#datatable')
         .style("margin-top", "30px")
@@ -486,13 +493,13 @@
 
     function updateAll() {
         syncData();
-        scatterUpdate();
-        tableUpdate();
+        updateScatterPlot();
+        updateDataTable();
     }
 
-    barChart();
-    let scatterUpdate = scatterPlot();
-    let tableUpdate = dataTable();
+    drawBarChart();
+    let updateScatterPlot = drawScatterPlot();
+    let updateDataTable = drawDataTable();
     
   </script>
 </body>
